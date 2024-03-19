@@ -3,6 +3,7 @@ Design IKN City
  
 Dosen pengampu : Tekad Matulatan, S.Sos, S.Kom, M.Inf.Tech
 
+Kelompok 12 - 
 Anggota Kelompok : 
 
 	
