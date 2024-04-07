@@ -1,11 +1,13 @@
 from PIL import Image, ImageDraw
 import random
+import math
 
 # Ukuran gambar dan jumlah langkah
 scale = 10
 width = 150 * scale
 height = 150 * scale
-max_count = 10
+max_count = 20
+roadWidth = 15
 
 streetv = Image.open("image/streetv.png")
 streeth = Image.open("image/streeth.png")
@@ -20,49 +22,76 @@ images = Image.new("RGBA", (width, height), color="green")
 draw = ImageDraw.Draw(image)
 draws = ImageDraw.Draw(images)
 trees = [tree,pinus]
-titikSudut = [(0,0),(width-(2*scale),height-(2*scale)),(0,height-(2*scale)),(width-(2*scale),0)]
+#vertexList = [(0,0),(width-(2*scale),height-(2*scale)),(0,height-(2*scale)),(width-(2*scale),0)]
+vertexList = []
 
-direction = ["atas","bawah","kanan","kiri"]
-startPoint = { "atas" : "bawah", "bawah" : "atas", "kanan" : "kiri","kiri" : "kanan"}
-move = { "atas" : [0,2*scale], "bawah" :[0,-2*scale], "kanan" : [2*scale,0],"kiri" : [-2*scale,0]}
+def generateVertex(width, height, previousVertex, vertexList):
+    min_distance = min(width, height) / 15  #Jarak minimum antar vertex
+    while True:
+        edge = random.choice(['x', 'y'])
 
+        if edge == 'x':
+            x = previousVertex[0]
+            y = random.randint(0, height)
+        else:
+            x = random.randint(0, width)
+            y = previousVertex[1]
 
-def makeRoads(x,y,arah,count,length):
-    global width, height
-    w, h = (2*scale, 2*scale) 
-    draw.rectangle( xy = (x,y, x + w , y + h), fill = (0,0,0))
-    if not count :
-        count = max_count
-        if not random.randint(0,3):
-            titikSudut.append((x,y))
-            arah = random.choice(direction[2:] if arah == "atas" or arah == "bawah" else direction[:2])
-    if ( length > 450 and (x<0 or y<0 or x >= width or y >= height) ) or length >= 700:
-        return
-    if (x >= 0 and x < width-2) and (y >= 0 and y < height-2):
-        makeRoads(x+move[arah][0], y+move[arah][1],arah,count-1,length+1)
-    else :
-        titikSudut.append((x%width, y%height))
-        titikSudut.append(((width+x+move[arah][0])%width, (height+y+move[arah][1])%height))
-        makeRoads((width+x+move[arah][0])%width, (height+y+move[arah][1])%height,arah,max_count,length+1)
+        #Mencegah overlapping from GPT :v
+        # Check distance to all existing vertices
+        if all(math.sqrt((x - v[0])**2 + (y - v[1])**2) >= min_distance for v in vertexList):
+            # Check distance to all existing segments
+            valid_point = True
+            for i in range(len(vertexList) - 1):
+                x1, y1, _ = vertexList[i]
+                x2, y2, _ = vertexList[i + 1]
+                distance = abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / math.sqrt((y2 - y1)**2 + (x2 - x1)**2)
+                if distance < min_distance:
+                    valid_point = False
+                    break
+
+            if valid_point:
+                return x, y, edge
+
+def firstVertex(width, height):
+    edge = random.choice(['atas', 'bawah', 'kiri', 'kanan'])
     
-
-def render():
-    directions = random.choice(direction)
-    if directions == "atas":
-        x = max_count * random.randint(1,width/max_count)
+    if edge == 'atas':
+        x = random.randint(0, width)
         y = 0
-    elif directions == "bawah":
-        x = max_count * random.randint(1,width/max_count)
-        y = height-1
-    elif direction == "kanan":
+    elif edge == 'bawah':
+        x = random.randint(0, width)
+        y = height
+    elif edge == 'kiri':
         x = 0
-        y = max_count * random.randint(1,height/max_count)
+        y = random.randint(0, height)
     else:
-        x = width-1
-        y = max_count * random.randint(1,height/max_count)
-    makeRoads(x,y,directions,max_count,1)
-    
+        x = width
+        y = random.randint(0, height)
+        
+    return x, y
 
+def lastVertex(width, height, previousVertex):
+    edge = previousVertex[2]
+    if(edge == 'x'):
+        edge = 'y'
+    else:
+        edge = 'x'
+
+    if edge == 'x':
+        x = previousVertex[0]
+        if(previousVertex[1] > height/2):
+            y = height
+        else:
+            y = 0
+    else:
+        if(previousVertex[0] > width/2):
+            x = width
+        else:
+            x = 0
+        y = previousVertex[1]
+
+    return x, y, edge
 
 def drawArea(x,y,x1,y1,side):
     padding  = 2*scale
@@ -93,54 +122,62 @@ def drawArea(x,y,x1,y1,side):
         drawArea(x+gedung.size[0],y+gedung.size[1],x1,y1,True)
 
 def search():
-    for idx, ver in enumerate(titikSudut):
+    for idx, ver in enumerate(vertexList):
         minX  = 0
         nearX = width
         nearY = height
         minY = 0
         maxX = 0
         maxY = 0
-        for i in range(0,len(titikSudut)):
+        for i in range(0,len(vertexList)):
             if i == idx :
                continue
-            if titikSudut[i][0] > ver[0] and titikSudut[i][0]  < nearX:
-                nearX = titikSudut[i][0]
-            if titikSudut[i][1] > ver[1] and titikSudut[i][1]  < nearY:
-                nearY = titikSudut[i][1]
-            if titikSudut[i][0] >= minX and titikSudut[i][0] < ver[0]:
-               minX = titikSudut[i][0]
-               maxY = titikSudut[i][1]
-            if titikSudut[i][1] >= minY and titikSudut[i][1] < ver[1]:
-               minY = titikSudut[i][1]
-               maxX = titikSudut[i][0]
+            if vertexList[i][0] > ver[0] and vertexList[i][0]  < nearX:
+                nearX = vertexList[i][0]
+            if vertexList[i][1] > ver[1] and vertexList[i][1]  < nearY:
+                nearY = vertexList[i][1]
+            if vertexList[i][0] >= minX and vertexList[i][0] < ver[0]:
+               minX = vertexList[i][0]
+               maxY = vertexList[i][1]
+            if vertexList[i][1] >= minY and vertexList[i][1] < ver[1]:
+               minY = vertexList[i][1]
+               maxX = vertexList[i][0]
         if minX > 0 and minY > 0:
             print("jumpa")
-            if (minX,minY) not in titikSudut:
-                titikSudut.append((minX,minY)) 
-            if (maxX,maxY) not in titikSudut:
-                titikSudut.append((maxX,maxY))
+            if (minX,minY) not in vertexList:
+                vertexList.append((minX,minY)) 
+            if (maxX,maxY) not in vertexList:
+                vertexList.append((maxX,maxY))
             print(ver, minX,minY)
             drawArea(minX+scale,minY+scale,ver[0],ver[1],True)
-        if (nearX,nearY) not in titikSudut:
-            titikSudut.append((nearX,nearY))
+        if (nearX,nearY) not in vertexList:
+            vertexList.append((nearX,nearY))
         if minX == 0 or minY == 0:
             drawArea(minX,minY,ver[0],ver[1],True)
        
-            
-            
-            
-        
-    
-render()
-tmp = titikSudut
-image.save("map1.png")
+#generate firstVertex
+previousVertex = firstVertex(width, height)
+vertexList.append(previousVertex + ('',))
+
+#generate random Vertex
+for _ in range(max_count - 2):
+    nextVertex = generateVertex(width, height, previousVertex, vertexList)
+    draw.line((previousVertex[0], previousVertex[1], nextVertex[0], nextVertex[1]), fill='black', width=roadWidth)
+    #draw.ellipse((nextVertex[0] - 2, nextVertex[1] - 2, nextVertex[0] + 2, nextVertex[1] + 2), fill='red')
+    previousVertex = nextVertex
+    vertexList.append(nextVertex)
+
+#generate lastVertex
+endVertex = lastVertex(width, height, previousVertex)
+vertexList.append(endVertex)
+draw.line((previousVertex[0], previousVertex[1], endVertex[0], endVertex[1]), fill='black', width=roadWidth)
 
 search()
-print(titikSudut)
-print(len(titikSudut))
-for ver in titikSudut:
-    draws.rectangle(xy = (ver[0],ver[1],ver[0]+(2*scale),ver[1]+(2*scale)),fill=(0,0,0))
+print(vertexList)
+print(len(vertexList))
+for ver in vertexList:
+   draws.rectangle(xy = (ver[0],ver[1],ver[0]+(2*scale),ver[1]+(2*scale)),fill=(0,0,0))
 # Menyimpan gambar sebagai file
 image.show()
-image.save("map2.png")
-images.save("vertices.png")
+#image.save("map2.png")
+#images.save("vertices.png")
