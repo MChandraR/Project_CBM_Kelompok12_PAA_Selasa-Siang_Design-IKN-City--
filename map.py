@@ -37,10 +37,7 @@ def generateVertex(width, height, previousVertex, vertexList):
             x = random.randint(0, width)
             y = previousVertex[1]
 
-        #Mencegah overlapping from GPT :v
-        # Check distance to all existing vertices
         if all(math.sqrt((x - v[0])**2 + (y - v[1])**2) >= min_distance for v in vertexList):
-            # Check distance to all existing segments
             valid_point = True
             for i in range(len(vertexList) - 1):
                 x1, y1, _ = vertexList[i]
@@ -99,7 +96,6 @@ def drawArea(x,y,x1,y1,side):
     if x >= x1-scale or y >= y1-scale:
         return
     curX,curY = x ,y
-    #draw.rectangle( xy = (x,y, x1-scale ,y1-scale), fill = (255,0,255))
     
     gedung = random.choice(buildings)
     if  gedung.size[0] < (x1-x-scale) and  gedung.size[1] < (y1-y-scale):
