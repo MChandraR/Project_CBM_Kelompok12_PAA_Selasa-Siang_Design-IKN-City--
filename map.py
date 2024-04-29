@@ -8,15 +8,16 @@ width = 150 * scale
 height = 150 * scale
 max_count = 20
 roadWidth = 15
+minimalPadding = 20
 
-streetv = Image.open("image/streetv.png")
-streeth = Image.open("image/streeth.png")
-building = Image.open("image/buildings.png")
-school = Image.open("image/school.png")
-house = Image.open("image/house.png")
+streetv = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/streetv.png")
+streeth = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/streeth.png")
+building = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/buildings.png")
+school = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/school.png")
+house = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/house.png")
 buildings = [building,house,school]
-tree = Image.open("image/tree.png")
-pinus = Image.open("image/pinuss.png")
+tree = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/tree.png")
+pinus = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/pinuss.png")
 image = Image.new("RGBA", (width, height), color="green")
 images = Image.new("RGBA", (width, height), color="green")
 draw = ImageDraw.Draw(image)
@@ -26,16 +27,18 @@ trees = [tree,pinus]
 vertexList = []
 
 def generateVertex(width, height, previousVertex, vertexList):
-    min_distance = min(width, height) / 15  #Jarak minimum antar vertex
+    min_distance = min(width - minimalPadding, height - minimalPadding) / 15  #Jarak minimum antar vertex
     while True:
-        edge = random.choice(['x', 'y'])
-
+        edge = previousVertex[2]
+       
         if edge == 'x':
             x = previousVertex[0]
-            y = random.randint(0, height)
+            y = random.randint(0 + minimalPadding, height - minimalPadding)
+            edge = 'y'
         else:
-            x = random.randint(0, width)
+            x = random.randint(0 + minimalPadding, width - minimalPadding)
             y = previousVertex[1]
+            edge = 'x'
 
         if all(math.sqrt((x - v[0])**2 + (y - v[1])**2) >= min_distance for v in vertexList):
             valid_point = True
@@ -54,33 +57,33 @@ def firstVertex(width, height):
     edge = random.choice(['atas', 'bawah', 'kiri', 'kanan'])
     
     if edge == 'atas':
-        x = random.randint(0, width)
-        y = 0
-    elif edge == 'bawah':
-        x = random.randint(0, width)
+        x = random.randint(0 + minimalPadding, width - minimalPadding)
         y = height
+        edge = 'x'
+    elif edge == 'bawah':
+        x = random.randint(0 + minimalPadding, width - minimalPadding)
+        y = 0
+        edge = 'x'
     elif edge == 'kiri':
         x = 0
-        y = random.randint(0, height)
+        y = random.randint(0 + minimalPadding, height - minimalPadding)
+        edge = 'y'
     else:
         x = width
-        y = random.randint(0, height)
+        y = random.randint(0 + minimalPadding, height - minimalPadding)
+        edge = 'y'
         
-    return x, y
+    return x, y, edge
 
 def lastVertex(width, height, previousVertex):
     edge = previousVertex[2]
-    if(edge == 'x'):
-        edge = 'y'
-    else:
-        edge = 'x'
 
     if edge == 'x':
         x = previousVertex[0]
-        if(previousVertex[1] > height/2):
-            y = height
-        else:
+        if(previousVertex[1] < height/2):
             y = 0
+        else:
+            y = height
     else:
         if(previousVertex[0] > width/2):
             x = width
@@ -153,7 +156,7 @@ def search():
        
 #generate firstVertex
 previousVertex = firstVertex(width, height)
-vertexList.append(previousVertex + ('',))
+vertexList.append(previousVertex)
 
 #generate random Vertex
 for _ in range(max_count - 2):
