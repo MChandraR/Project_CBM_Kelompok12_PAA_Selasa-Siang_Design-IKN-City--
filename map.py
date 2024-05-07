@@ -2,11 +2,11 @@ from PIL import Image, ImageDraw
 import random
 import math
 
-# Ukuran gambar dan jumlah langkah
+# Ukuran gambar dan jumlah vertices
 scale = 10
 width = 150 * scale
 height = 150 * scale
-max_count = 20
+vertice = 20
 roadWidth = 15
 minimalPadding = 20
 
@@ -19,12 +19,11 @@ buildings = [building,house,school]
 tree = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/tree.png")
 pinus = Image.open("D:/visual studio workspace/Project PAA/Project_CBM_Kelompok12_PAA_Selasa-Siang_Design-IKN-City--/image/pinuss.png")
 image = Image.new("RGBA", (width, height), color="green")
-images = Image.new("RGBA", (width, height), color="green")
 draw = ImageDraw.Draw(image)
-draws = ImageDraw.Draw(images)
 trees = [tree,pinus]
 #vertexList = [(0,0),(width-(2*scale),height-(2*scale)),(0,height-(2*scale)),(width-(2*scale),0)]
 vertexList = []
+areaKosong = []
 
 def generateVertex(width, height, previousVertex, vertexList):
     min_distance = min(width - minimalPadding, height - minimalPadding) / 15  #Jarak minimum antar vertex
@@ -40,6 +39,7 @@ def generateVertex(width, height, previousVertex, vertexList):
             y = previousVertex[1]
             edge = 'x'
 
+        #cek agar jalan tidak bertumpuk
         if all(math.sqrt((x - v[0])**2 + (y - v[1])**2) >= min_distance for v in vertexList):
             valid_point = True
             for i in range(len(vertexList) - 1):
@@ -80,10 +80,10 @@ def lastVertex(width, height, previousVertex):
 
     if edge == 'x':
         x = previousVertex[0]
-        if(previousVertex[1] < height/2):
-            y = 0
-        else:
+        if(previousVertex[1] > height/2):
             y = height
+        else:
+            y = 0
     else:
         if(previousVertex[0] > width/2):
             x = width
@@ -93,32 +93,48 @@ def lastVertex(width, height, previousVertex):
 
     return x, y, edge
 
-def drawArea(x,y,x1,y1,side):
-    padding  = 2*scale
-    x += padding ; y+= padding
-    if x >= x1-scale or y >= y1-scale:
+def drawArea(x, y, x1, y1, side, scale=1):
+    padding = int(2.5 * scale)
+    x += padding
+    y += padding
+    if x >= x1 - scale or y >= y1 - scale:
         return
-    curX,curY = x ,y
-    
+    curX, curY = x, y
+
     gedung = random.choice(buildings)
-    if  gedung.size[0] < (x1-x-scale) and  gedung.size[1] < (y1-y-scale):
-        image.paste(gedung,(x,y))
-    elif (x1-x) > tree.size[0] and (y1-y) > tree.size[1] :
+    if gedung.size[0] < (x1 - x - scale) and gedung.size[1] < (y1 - y - scale):
+        isKosong = False
+        for area in areaKosong: #cek area kosong
+            if (x >= area[0] and x < area[2]) and (y >= area[1] and y < area[3]):
+                isKosong = True
+                break
+        if not isKosong:
+            image.paste(gedung, (x, y))
+            areaKosong.append((x, y, x + gedung.size[0], y + gedung.size[1]))
+    elif (x1 - x) > tree.size[0] and (y1 - y) > tree.size[1]:
         gedung = random.choice(trees)
-        image.paste(gedung,(x,y))
+        isKosong = False
+        for area in areaKosong:
+            if (x >= area[0] and x < area[2]) and (y >= area[1] and y < area[3]):
+                isKosong = True
+                break
+        if not isKosong:
+            image.paste(gedung, (x, y))
+            areaKosong.append((x, y, x + gedung.size[0], y + gedung.size[1]))
+
     while (curX + gedung.size[0] + padding) < x1 and side:
         size = gedung.size[0] + scale
-        if y+building.size[0]-padding < y1:
-            drawArea(curX+size,y-padding,x1,y+building.size[0]-padding,False)
+        if y + gedung.size[0] - padding < y1:
+            drawArea(curX + size, y - padding, x1, y + gedung.size[0] - padding, False)
         curX += size + scale
     while (curY + gedung.size[1] + padding) < y1 and side:
         size = gedung.size[1] + scale
-        if x+building.size[1]-padding < x1:
-            drawArea(x-padding,curY+size,x+building.size[1]-padding,y1,False)
+        if x + gedung.size[1] - padding < x1:
+            drawArea(x - padding, curY + size, x + gedung.size[1] - padding, y1, False)
         curY += size + scale
-    
-    if (x+gedung.size[0]-padding+scale)<x1 and (y+gedung.size[1]-padding+scale) < y1 and not side:
-        drawArea(x+gedung.size[0],y+gedung.size[1],x1,y1,True)
+
+    if (x + gedung.size[0] - padding + scale) < x1 and (y + gedung.size[1] - padding + scale) < y1 and not side:
+        drawArea(x + gedung.size[0], y + gedung.size[1], x1, y1, True)
 
 def search():
     for idx, ver in enumerate(vertexList):
@@ -144,7 +160,7 @@ def search():
         if minX > 0 and minY > 0:
             print("jumpa")
             if (minX,minY) not in vertexList:
-                vertexList.append((minX,minY)) 
+                vertexList.append((minX,minY))  
             if (maxX,maxY) not in vertexList:
                 vertexList.append((maxX,maxY))
             print(ver, minX,minY)
@@ -153,29 +169,36 @@ def search():
             vertexList.append((nearX,nearY))
         if minX == 0 or minY == 0:
             drawArea(minX,minY,ver[0],ver[1],True)
-       
-#generate firstVertex
-previousVertex = firstVertex(width, height)
-vertexList.append(previousVertex)
 
-#generate random Vertex
-for _ in range(max_count - 2):
-    nextVertex = generateVertex(width, height, previousVertex, vertexList)
-    draw.line((previousVertex[0], previousVertex[1], nextVertex[0], nextVertex[1]), fill='black', width=roadWidth)
-    #draw.ellipse((nextVertex[0] - 2, nextVertex[1] - 2, nextVertex[0] + 2, nextVertex[1] + 2), fill='red')
-    previousVertex = nextVertex
-    vertexList.append(nextVertex)
+def drawRoad():
+    #generate firstVertex
+    previousVertex = firstVertex(width, height)
+    vertexList.append(previousVertex)
 
-#generate lastVertex
-endVertex = lastVertex(width, height, previousVertex)
-vertexList.append(endVertex)
-draw.line((previousVertex[0], previousVertex[1], endVertex[0], endVertex[1]), fill='black', width=roadWidth)
+    #generate random Vertex
+    for _ in range(vertice - 2):
+        nextVertex = generateVertex(width, height, previousVertex, vertexList)
+        draw.line((previousVertex[0], previousVertex[1], nextVertex[0], nextVertex[1]), fill='black', width=roadWidth)
+        #draw.ellipse((nextVertex[0] - 2, nextVertex[1] - 2, nextVertex[0] + 2, nextVertex[1] + 2), fill='red')
+        previousVertex = nextVertex
+        vertexList.append(nextVertex)
 
+    #generate lastVertex
+    endVertex = lastVertex(width, height, previousVertex)
+    vertexList.append(endVertex)
+    draw.line((previousVertex[0], previousVertex[1], endVertex[0], endVertex[1]), fill='black', width=roadWidth)
+
+    #white line
+    whiteLine = [(x, y) for x, y, _ in vertexList]
+    draw.line(whiteLine, fill='white')
+
+drawRoad()
 search()
 print(vertexList)
 print(len(vertexList))
-for ver in vertexList:
-   draws.rectangle(xy = (ver[0],ver[1],ver[0]+(2*scale),ver[1]+(2*scale)),fill=(0,0,0))
+#for ver in vertexList:
+   #draw.rectangle(xy = (ver[0],ver[1],ver[0]+(2*scale),ver[1]+(2*scale)),fill=(0,0,0))
+
 # Menyimpan gambar sebagai file
 image.show()
 #image.save("map2.png")
