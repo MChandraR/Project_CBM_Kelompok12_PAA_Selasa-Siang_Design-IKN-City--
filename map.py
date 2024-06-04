@@ -132,15 +132,15 @@ def makePoint(pos, save_point):
     
 vportx , vporty = 0,0
 zoom_factor = 1.0
-INITIAL_WIDTH = 500
-INITIAL_HEIGHT = 400
+INITIAL_WIDTH = 800
+INITIAL_HEIGHT = 600
 viewport_x = 0
 viewport_y = 0
 viewport_width = 400
 viewport_height = 400
 
 def generateMap():
-    global maps,mapDraw, lastVertices, count, out
+    global maps,mapDraw, lastVertices, count, out, viewport_x, viewport_y
     maps = Image.new("RGBA", (width , height), "gray")
     mapDraw = ImageDraw.Draw(maps,"RGBA")
     lastVertices = [(0,0)]
@@ -155,64 +155,69 @@ def generateMap():
     img_tk = ImageTk.PhotoImage(resized_map)
     map_label.config(image=img_tk)
     map_label.image = img_tk
+    viewport_x = ((out.width / zoom_factor) - viewport_width) // 2
+    viewport_y = ((out.height / zoom_factor) - viewport_height) // 2
     update()
-    
 
-    
-    
 def update():
-    print("zoom")
     global out
     cropped_map = out.crop((viewport_x * zoom_factor, viewport_y * zoom_factor, viewport_x* zoom_factor + viewport_width* zoom_factor, viewport_y* zoom_factor + viewport_height* zoom_factor))
     resized_map = cropped_map.resize((INITIAL_WIDTH, INITIAL_HEIGHT))
     img_tk = ImageTk.PhotoImage(resized_map)
     map_label.config(image=img_tk)
     map_label.image = img_tk
-    
-def zoom_in():
-    global zoom_factor
-    if zoom_factor < 5.0:
-        zoom_factor += 0.1
-        update()
 
-# Fungsi untuk zoom out
-def zoom_out():
-    global zoom_factor
-    if zoom_factor > 0.5:
-        zoom_factor -= 0.1
-        update()
-        
-def scroll(event):
+def on_key_press(event):
     global viewport_x, viewport_y
-    if event.delta > 0:
-        # Scroll ke atas
+    if event.keysym == "Up" and viewport_y > 0:
         viewport_y -= 20
-    else:
-        # Scroll ke bawah
+    elif event.keysym == "Down" and viewport_y < (out.height / zoom_factor) - viewport_height:
         viewport_y += 20
+    elif event.keysym == "Left" and viewport_x > 0:
+        viewport_x -= 20
+    elif event.keysym == "Right" and viewport_x < (out.width / zoom_factor) - viewport_width:
+        viewport_x += 20
     update()
-            
+
+def scroll(event):
+    global zoom_factor, viewport_x, viewport_y
+    if event.delta > 0 and zoom_factor < 3.9:
+        zoom_factor += 0.1
+        viewport_x = ((out.width / zoom_factor) - viewport_width) // 2
+        viewport_y = ((out.height / zoom_factor) - viewport_height) // 2
+    elif zoom_factor > 1.0:
+        zoom_factor -= 0.1
+        viewport_x = ((out.width / zoom_factor) - viewport_width) // 2
+        viewport_y = ((out.height / zoom_factor) - viewport_height) // 2
+    update()
 
 root = tk.Tk()
 root.title("Map Generator")
+root.state("zoom")
+root.configure(bg="#D3D3D3")
 root.bind("<MouseWheel>", scroll)
+root.bind("<KeyPress>", on_key_press)
+root.columnconfigure(0, weight=1)
+root.rowconfigure(0, weight=1)
 
-frame = ttk.Frame(root, padding=10)
+style = ttk.Style()
+style.configure("TFrame", background="#D3D3D3")
+
+frame = ttk.Frame(root, padding=1)
 frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+frame.columnconfigure(0, weight=1)
+frame.rowconfigure(0, weight=1)
 
 map_label = ttk.Label(frame)
-map_label.grid(row=0, column=0, padx=10, pady=10)
+map_label.grid(row=0, column=0)
 
-generate_button = ttk.Button(root, text="Generate Map", command=generateMap)
-generate_button.grid(row=1, column=0, pady=10)
+frame.grid_columnconfigure(0, weight=1)
+frame.grid_rowconfigure(0, weight=1)
+frame.grid_rowconfigure(1, weight=1)
 
-zoom_in_button = ttk.Button(root, text="Zoom In", command=zoom_in)
-zoom_in_button.grid(row=2, column=0, pady=5)
+generate_button = ttk.Button(root, text="GENERATE MAP", command=generateMap, width=40)
+generate_button.grid(row=1, column=0, pady=90)
 
 generateMap()
-zoom_out_button = ttk.Button(root, text="Zoom Out", command=zoom_out)
-zoom_out_button.grid(row=3, column=0, pady=5)
 
 root.mainloop()
-
-# out.show()
