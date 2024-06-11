@@ -68,67 +68,66 @@ def drawRoad(start,end,dir):
 
 def drawCorner(pos, dir):maps.paste(cornerL if dir=="l" else cornerR, pos)
 
-def mapping(ver1,ver2,ver3,ver4,adver,hah,text):
-    global count
-    if (ver1[1] == ver2[1] and ver1[0] == ver4[0]) and (ver2[0] == ver3[0] and ver4[1] == ver3[1]) and len(hah) < 5 : drawArea((ver1[0]+road_width,ver1[1]+road_width), (ver3[0], ver3[1]), text)
-    elif (ver1[1] == ver2[1] and ver1[0] == ver4[0]) and (ver2[0] == ver3[0] and ver4[1] == ver3[1]) and len(hah) >= 5  :
-        max_atas = max([data[1] for data in hah])
+def mapping(ver1,ver2,ver3,ver4,adver,add,text):
+    if (ver1[1] == ver2[1] and ver1[0] == ver4[0]) and (ver2[0] == ver3[0] and ver4[1] == ver3[1]) and len(add) < 5 : 
+        drawArea((ver1[0]+road_width,ver1[1]+road_width), (ver3[0], ver3[1]), text)
+    elif (ver1[1] == ver2[1] and ver1[0] == ver4[0]) and (ver2[0] == ver3[0] and ver4[1] == ver3[1]) and len(add) >= 5  :
+        max_atas = max([data[1] for data in add])
         drawArea((ver1[0]+road_width,max_atas+road_width), (ver3[0], ver3[1]), text)
-      #Bentuk die l kebalik
+    #Bentuk L Terbalik
     elif ver1[1] >  ver2[1]  and text == "normal" :
-        max_atas = max([data[1] for data in hah])
-        minx = min([ver[0] for ver in hah if ver[0] > ver4[0] and ver[1] < max_atas])
-        mapping((ver4[0], ver1[1] if len(hah) <= 3 else max_atas), (ver2[0], ver1[1] if len(hah) <= 3 else max_atas), ver3, ver4, [],[], "bawah")
+        max_atas = max([data[1] for data in add])
+        minx = min([ver[0] for ver in add if ver[0] > ver4[0] and ver[1] < max_atas])
+        mapping((ver4[0], ver1[1] if len(add) <= 3 else max_atas), (ver2[0], ver1[1] if len(add) <= 3 else max_atas), ver3, ver4, [],[], "bawah")
         mapping((minx,adver[-1:][0][1]), ( ver2[0], adver[-1:][0][1]), (ver2[0], ver1[1] + ((road_width+padding) if ver1[1] < ver3[1] else 0)), (adver[-2:-1][0][0] if len(adver) > 1 else adver[-1:][0][0], ver1[1] + ((road_width+padding) if ver1[1] < ver3[1] else 0)), [], [],"atas")
-    # #bentuk die L
+    #bentuk  L
     elif ver1[1] < ver2[1] and text == "normal":
-        max_atas = max([data[1] for data in hah])
+        max_atas = max([data[1] for data in add])
         mapping((ver1[0], ver2[1]), (ver2[0], ver2[1]), ver3, ver4, adver, [], "bawah")
-        mapping(ver1,hah[-2:-1][0] if len(hah) > 2 else hah[-1:][0], (hah[-2:-1][0][0] if len(hah) >2 else hah[-1:][0][0],ver2[1] + ((road_width+padding) if ver2[1] < ver3[1] else 0)),(ver1[0], ver2[1]+ ((road_width+padding) if ver2[1] < ver3[1] else 0)),[],[],"atas")
-    count +=1
+        mapping(ver1,add[-2:-1][0] if len(add) > 2 else add[-1:][0], (add[-2:-1][0][0] if len(add) >2 else add[-1:][0][0],ver2[1] + ((road_width+padding) if ver2[1] < ver3[1] else 0)),(ver1[0], ver2[1]+ ((road_width+padding) if ver2[1] < ver3[1] else 0)),[],[],"atas")
 
 def limitX(x): return x if x < width else width
 def limitY(y): return y if y < height else height
 
 #Algo Jalan dan mapping area
-def makePoint(pos, save_point):
+def divideArea(pos, save_point):
     nextJump = (limitX(pos[0]+ random.randint(2,4) * 10*scale),  limitY(random.randint(2,4) * 10*scale))
-    limit_atass, limit_atasss = pos[1], pos[1]
+    limit_atas, limit_atass = pos[1], pos[1]
     midver = []
     max_atas = 0
     overlap = False
-    hah = [(pos)]
+    add = [(pos)]
     prev = lastVertices[0]
     for ver in lastVertices:
         if pos[0] > prev[0] and pos[0] < ver[0]: 
-            limit_atass = ver[1] 
+            limit_atas = ver[1] 
             if prev != ver : prev = ver
         if ver[0] < nextJump[0]:
             if ver[0]>=pos[0] : 
                 if not len(midver): midver = [ver]
                 else :midver.append(ver)
-            limit_atasss = ver[1]
+            limit_atass = ver[1]
             max_atas = ver[1] if ver[1] > max_atas else max_atas
-        if ver[0] < nextJump[0] and ver[0] > pos[0]: hah.append(ver)
-    maks = max(pos[1],max_atas,limit_atasss+nextJump[1])
+        if ver[0] < nextJump[0] and ver[0] > pos[0]: add.append(ver)
+    maks = max(pos[1],max_atas,limit_atass+nextJump[1])
     nextJump = (nextJump[0], maks if maks<= height else height )
     for ver in save_point: 
         if ver[0] == pos[0] and ver[1] > nextJump[1]: overlap = True
-    corcount = sum( [ver == (nextJump[0], limit_atasss) for ver in lastVertices])
+    corcount = sum( [ver == (nextJump[0], limit_atass) for ver in lastVertices])
     drawCorner((pos[0], nextJump[1]-road_width), "l") if (pos[0], nextJump[1]) not in save_point and not overlap and pos[0]> 0 else drawRoad((pos[0], nextJump[1]),(pos[0]+road_width, nextJump[1]),"x")
     if(nextJump[0]+road_width<=width and nextJump[1]  < height):drawCorner((nextJump[0]-road_width, nextJump[1]-road_width), "r")
-    if(pos[0]>0): drawRoad((pos[0] , limit_atass+ (road_width if limit_atass>0 else 0) ),(pos[0], nextJump[1]), "y")
+    if(pos[0]>0): drawRoad((pos[0] , limit_atas+ (road_width if limit_atas>0 else 0) ),(pos[0], nextJump[1]), "y")
     drawRoad((pos[0]+road_width, nextJump[1]),(nextJump), "x")
-    drawRoad((nextJump[0], limit_atasss+(road_width if not corcount else 0)),(nextJump), "y")
+    drawRoad((nextJump[0], limit_atass+(road_width if not corcount else 0)),(nextJump), "y")
     save_point.extend(((pos[0], nextJump[1]) , nextJump))
-    mapping((pos[0],limit_atass), (nextJump[0], limit_atasss), nextJump, (pos[0], nextJump[1]), midver,hah, "normal")
+    mapping((pos[0],limit_atas), (nextJump[0], limit_atass), nextJump, (pos[0], nextJump[1]), midver,add, "normal")
     if(pos[0] >= 0 and pos[0] < width): 
-        makePoint((nextJump[0], limit_atasss), save_point)
+        divideArea((nextJump[0], limit_atass), save_point)
     else:       
         if(pos[1] >= 0 and pos[1]+200 < height):
             lastVertices.clear()  
             lastVertices.extend((save_point))
-            makePoint((0, lastVertices[0][1]), [])
+            divideArea((0, lastVertices[0][1]), [])
     
 vportx , vporty = 0,0
 zoom_factor = 1.0
@@ -145,7 +144,7 @@ def generateMap():
     mapDraw = ImageDraw.Draw(maps,"RGBA")
     lastVertices = [(0,0)]
     count = 0
-    makePoint((0,0), [])
+    divideArea((0,0), [])
     maps.save("map1.png")
     new = Image.new("RGBA", (width , height), "green")
     out = Image.alpha_composite( new,maps)
